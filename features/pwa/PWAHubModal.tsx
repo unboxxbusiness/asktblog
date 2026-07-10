@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Download, Bell, X, CheckCircle2, Loader2, Sparkles, AlertCircle } from "lucide-react";
+import { Download, Bell, X, CheckCircle2, Loader2, Sparkles } from "lucide-react";
 import { getToken } from "firebase/messaging";
 import { collection, addDoc, query, where, getDocs, updateDoc, doc } from "firebase/firestore";
 import { firestore, messaging } from "@/lib/firebase";
@@ -65,15 +65,23 @@ export default function PWAHubModal() {
     checkInstallStatus();
 
     // 6. Detect FCM notification status
-    if (typeof window !== "undefined" && "Notification" in window) {
-      setIsSubscribed(Notification.permission === "granted" && localStorage.getItem("fcm_subscribed") === "true");
-    }
+    const updateSubscriptionStatus = () => {
+      if (typeof window !== "undefined" && "Notification" in window) {
+        setIsSubscribed(Notification.permission === "granted" && localStorage.getItem("fcm_subscribed") === "true");
+      }
+    };
+    updateSubscriptionStatus();
+
+    window.addEventListener("storage", updateSubscriptionStatus);
+    window.addEventListener("fcm-subscription-changed", updateSubscriptionStatus);
 
     return () => {
       window.removeEventListener("trigger-pwa-hub", handleOpen);
       window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
       window.removeEventListener("deferred-prompt-ready", handleDeferredReady);
       window.removeEventListener("appinstalled", handleAppInstalled);
+      window.removeEventListener("storage", updateSubscriptionStatus);
+      window.removeEventListener("fcm-subscription-changed", updateSubscriptionStatus);
     };
   }, []);
 
@@ -132,20 +140,23 @@ export default function PWAHubModal() {
         return;
       }
 
-      // Explicit SW registration to avoid Next.js routing scopes conflicts
-      console.log("[FCM Push Setup] Registering service worker...");
-      const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+      // Wait for the primary SW to be ready first, then register FCM SW
+      console.log("[FCM Push Setup] Waiting for service worker to be ready...");
+      await navigator.serviceWorker.ready;
 
-      // FIX: Wait for the service worker to become fully active/activated
-      // This prevents the 'Subscription failed - no active Service Worker' AbortError.
+      // Explicit FCM SW registration to avoid Next.js routing scope conflicts
+      console.log("[FCM Push Setup] Registering Firebase messaging service worker...");
+      const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js", { updateViaCache: "none" });
+
+      // Wait for the FCM SW to become fully active before calling getToken
       if (!registration.active) {
-        console.log("[FCM Push Setup] Waiting for service worker to activate...");
+        console.log("[FCM Push Setup] Waiting for FCM service worker to activate...");
         await new Promise<void>((resolve) => {
           const serviceWorker = registration.installing || registration.waiting;
           if (serviceWorker) {
             serviceWorker.addEventListener("statechange", (e: any) => {
               if (e.target.state === "activated") {
-                console.log("[FCM Push Setup] Service worker activated!");
+                console.log("[FCM Push Setup] FCM service worker activated!");
                 resolve();
               }
             });
@@ -190,7 +201,12 @@ export default function PWAHubModal() {
       }
 
       localStorage.setItem("fcm_subscribed", "true");
+      // Persist dismissed state so auto-prompt doesn't re-fire
+      localStorage.setItem("fcm_prompt_dismissed", "true");
       setIsSubscribed(true);
+      // Sync header bell state
+      window.dispatchEvent(new Event("storage"));
+      window.dispatchEvent(new Event("fcm-subscription-changed"));
 
       // Trigger Confetti!
       import("canvas-confetti").then((module) => {
@@ -211,7 +227,7 @@ export default function PWAHubModal() {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/60 backdrop-blur-sm animate-fade-in-up">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in-up">
       <div className="w-full max-w-lg bg-card border border-border rounded-2xl shadow-2xl p-6 relative overflow-hidden">
         {/* Top gradient bubble */}
         <div className="absolute -top-12 -right-12 w-36 h-36 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
@@ -266,7 +282,7 @@ export default function PWAHubModal() {
             </div>
 
             {/* Box 2: FCM Notifications */}
-            <div className="bg-secondary/25 border border-border rounded-xl p-5 flex flex-col items-center text-center justify-between min-h-[220px]">
+            <div className="bg-secondary/25 border border-border rounded-xl p-5 flex flex-col items-center text-center justify-between min-h-[240px]">
               <div className="h-11 w-11 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-3">
                 <Bell className="h-5 w-5" />
               </div>
