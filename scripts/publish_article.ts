@@ -104,15 +104,56 @@ async function publish() {
     process.exit(0);
   }
 
-  // 1. Read draft file
+  // 1. Read draft file with robust multi-pass sanitization
   let draft: ArticleDraft;
   try {
-    const raw = fs.readFileSync(draftPath, "utf8");
+    let raw = fs.readFileSync(draftPath, "utf8").trim();
+
+    // ── Pass 1: Extract the raw `content` HTML value before JSON.parse.
+    // The `content` field is always the last key before the closing `}`.
+    // We find its value by locating `"content":` then reading from the
+    // first `"` after the colon all the way to the last `"` before `\n}`.
+    // This makes us immune to unescaped HTML attribute quotes (href="...")
+    // and bare newlines inside Mermaid/code blocks simultaneously.
+    const contentKeyMatch = raw.match(/"content"\s*:\s*"/);
+    if (contentKeyMatch && contentKeyMatch.index !== undefined) {
+      const contentStart = contentKeyMatch.index + contentKeyMatch[0].length;
+      // The content value ends at the last `"` before the final `}`
+      const closingBrace = raw.lastIndexOf("}");
+      // Walk backwards from closing brace to find the terminating `"`
+      let contentEnd = closingBrace - 1;
+      while (contentEnd > contentStart && raw[contentEnd] !== '"') contentEnd--;
+
+      // Extract the raw content string (may contain unescaped quotes and newlines)
+      const rawContent = raw.slice(contentStart, contentEnd);
+
+      // ── Pass 2: Sanitize the extracted content
+      // Unescape any already-escaped sequences first, then re-encode cleanly
+      let cleanContent = rawContent
+        .replace(/\\"/g, '\x01QUOT\x01')  // protect intentional \" → placeholder
+        .replace(/\\n/g, '\x01NL\x01')    // protect intentional \n → placeholder
+        .replace(/\\t/g, '\x01TAB\x01')   // protect intentional \t → placeholder
+        .replace(/\\/g, '\\\\')           // escape remaining bare backslashes
+        .replace(/"/g, '\\"')             // escape all bare double quotes in HTML
+        .replace(/\r\n|\r|\n/g, '\\n')    // escape all bare newlines
+        .replace(/\t/g, '\\t')            // escape all bare tabs
+        .replace(/\x01QUOT\x01/g, '\\"')  // restore protected \"
+        .replace(/\x01NL\x01/g, '\\n')    // restore protected \n
+        .replace(/\x01TAB\x01/g, '\\t');  // restore protected \t
+
+      // ── Pass 3: Rebuild raw JSON with safe content value, then parse
+      const before = raw.slice(0, contentStart);
+      const after  = raw.slice(contentEnd);
+      raw = before + cleanContent + after;
+    }
+
     draft = JSON.parse(raw);
   } catch (err: any) {
     console.error("[!] Error parsing draft_article.json:", err.message);
+    console.error("    Tip: Ensure all newlines inside JSON string values are escaped as \\n");
     process.exit(1);
   }
+
 
   // 2. Validate essential fields
   if (!draft.title || !draft.content || !draft.category || !draft.image || !draft.author) {
@@ -153,17 +194,34 @@ async function publish() {
     };
 
     const draftSlug = slugify(draft.title);
+    let exists = false;
     for (const article of existingArticles) {
-      const score = calculateSimilarity(article.title, draft.title);
-      if (article.slug === draftSlug || score > 0.8) {
-        console.error(`\n[!] Error: Duplicate article detected in database!`);
-        console.error(`    Draft Title     : "${draft.title}"`);
-        console.error(`    Existing Title  : "${article.title}"`);
-        console.error(`    Existing Slug   : "${article.slug}"`);
-        console.error(`    Similarity Score: ${Math.round(score * 100)}% (Threshold: 80%)`);
-        console.error(`    Publish flow aborted to prevent duplicate content.\n`);
-        client.close();
-        process.exit(1);
+      if (article.slug === draftSlug) {
+        exists = true;
+        break;
+      }
+    }
+
+    if (exists) {
+      console.log(`[*] Found existing article with slug "${draftSlug}". Deleting old record for overwrite...`);
+      await client.execute({
+        sql: "DELETE FROM articles WHERE slug = ?",
+        args: [draftSlug]
+      });
+    } else {
+      // Apply Jaccard similarity index threshold checks for new titles
+      for (const article of existingArticles) {
+        const score = calculateSimilarity(article.title, draft.title);
+        if (score > 0.8) {
+          console.error(`\n[!] Error: Similar article exists in database!`);
+          console.error(`    Draft Title     : "${draft.title}"`);
+          console.error(`    Existing Title  : "${article.title}"`);
+          console.error(`    Existing Slug   : "${article.slug}"`);
+          console.error(`    Similarity Score: ${Math.round(score * 100)}% (Threshold: 80%)`);
+          console.error(`    Publish flow aborted to prevent duplicate content.\n`);
+          client.close();
+          process.exit(1);
+        }
       }
     }
   } catch (err: any) {

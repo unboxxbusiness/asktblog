@@ -7,6 +7,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
 import re
 import time
+import random
 
 # Niche keywords for filtering and scoring
 NICHE_KEYWORDS = [
@@ -38,29 +39,21 @@ YOUTUBE_CHANNELS = [
     {"name": "Make", "id": "UC_P06z01m9xS1xH2J93y94Q"}
 ]
 
-# AI Company RSS Feeds
+# AI Company RSS Feeds (Active feeds only)
 COMPANY_FEEDS = [
-    {"name": "OpenAI", "url": "https://openai.com/index/rss.xml"}, # Fallback is parsing OpenAI news via XML
+    {"name": "OpenAI", "url": "https://openai.com/news/rss.xml"},
     {"name": "Google AI Blog", "url": "https://blog.google/technology/ai/rss/"},
-    {"name": "Anthropic", "url": "https://anthropic.com/news/rss.xml"},
     {"name": "Microsoft Blog", "url": "https://blogs.microsoft.com/feed/"},
-    {"name": "Meta AI Blog", "url": "https://ai.meta.com/blog/rss/"},
-    {"name": "Perplexity Hub", "url": "https://perplexity.ai/hub/rss.xml"},
-    {"name": "Cursor Blog", "url": "https://cursor.sh/blog/rss.xml"},
-    {"name": "ElevenLabs Blog", "url": "https://elevenlabs.io/blog/rss.xml"},
-    {"name": "Runway Blog", "url": "https://runwayml.com/blog/rss.xml"},
     {"name": "Hugging Face Blog", "url": "https://huggingface.co/blog/feed.xml"}
 ]
 
-# General RSS Feeds
+# General RSS Feeds (Active feeds only)
 GENERAL_FEEDS = [
     {"name": "MIT Technology Review AI", "url": "https://www.technologyreview.com/topic/artificial-intelligence/feed/"},
     {"name": "VentureBeat AI", "url": "https://venturebeat.com/category/ai/feed/"},
     {"name": "TechCrunch AI", "url": "https://techcrunch.com/category/artificial-intelligence/feed/"},
-    {"name": "The Verge AI", "url": "https://www.theverge.com/ai-artificial-intelligence/rss/index.xml"},
     {"name": "Ars Technica AI", "url": "https://feeds.arstechnica.com/arstechnica/features"},
-    {"name": "Coursera Blog", "url": "https://blog.coursera.org/feed/"},
-    {"name": "Microsoft Learn Blog", "url": "https://techcommunity.microsoft.com/gxcuf89792/rss/board?board.id=MicrosoftLearnBlog"}
+    {"name": "Coursera Blog", "url": "https://blog.coursera.org/feed/"}
 ]
 
 # Reddit subreddits to monitor
@@ -68,18 +61,21 @@ REDDIT_SUBS = ["OpenAI", "ChatGPT", "artificial", "ClaudeAI", "LocalLLaMA", "sin
 
 def make_request(url):
     """Makes a web request using standard library urllib with a standard User-Agent header."""
+    app_id = "windows:theaskt:v1.0.0"
     try:
         req = urllib.request.Request(
             url,
             headers={
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
+                'User-Agent': app_id,
                 'Accept': 'application/xml,application/xhtml+xml,text/html;q=0.9,image/webp,*/*;q=0.8'
             }
         )
-        with urllib.request.urlopen(req, timeout=10) as response:
+        with urllib.request.urlopen(req, timeout=3) as response:
             return response.read()
     except Exception as e:
-        print(f"[!] Request failed for {url}: {e}")
+        # Silence expected rate-limiting (429), dead URLs (404), or cloudflare blocks (403)
+        if "429" not in str(e) and "404" not in str(e) and "403" not in str(e) and "400" not in str(e):
+            print(f"[!] Request failed for {url}: {e}")
         return None
 
 def parse_iso_duration(duration_str):
@@ -179,6 +175,7 @@ def get_reddit_trending():
     for sub in REDDIT_SUBS:
         url = f"https://www.reddit.com/r/{sub}/.rss"
         xml_data = make_request(url)
+        time.sleep(random.uniform(2.0, 4.5)) # Introduce random sleep jitter to prevent rate-limiting
         if not xml_data:
             continue
         try:
@@ -331,42 +328,74 @@ def get_youtube_trending_and_growing(api_key):
     trending_videos = []
     growing_videos = []
     all_video_ids = set()
-    
-    # ── PHASE 1: RSS FEEDS (Trending last 7 days) ──
-    print("[*] Processing YouTube Channel RSS feeds for Trending videos (last 7 days)...")
+    # ── PHASE 1: LATEST VIDEOS (Trending last 7 days) ──
     rss_videos_draft = []
     now = datetime.now(timezone.utc)
     
-    for channel in YOUTUBE_CHANNELS:
-        url = f"https://www.youtube.com/feeds/videos.xml?channel_id={channel['id']}"
-        xml_data = make_request(url)
-        time.sleep(1.5) # Prevent YouTube CDN rate limiting/404 blocks
-        if not xml_data:
-            continue
-        try:
-            ns = {'yt': 'http://www.youtube.com/xml/schemas/2015', 'atom': 'http://www.w3.org/2005/Atom'}
-            root = ET.fromstring(xml_data)
-            for entry in root.findall('atom:entry', ns):
-                video_id_el = entry.find('yt:videoId', ns)
-                title = entry.find('atom:title', ns)
-                published = entry.find('atom:published', ns)
-                
-                if video_id_el is not None and title is not None and published is not None:
-                    vid_id = video_id_el.text.strip()
-                    pub_parsed = datetime.fromisoformat(published.text.replace("Z", "+00:00"))
-                    days_old = (now - pub_parsed).days
+    if api_key:
+        print("[*] Processing YouTube API (Search) for latest channel videos (last 7 days)...")
+        for channel in YOUTUBE_CHANNELS:
+            url = (
+                f"https://www.googleapis.com/youtube/v3/search"
+                f"?part=id,snippet&channelId={channel['id']}&maxResults=5"
+                f"&order=date&type=video&key={api_key}"
+            )
+            data_bytes = make_request(url)
+            time.sleep(0.5) # Prevent YouTube API throttling
+            if not data_bytes:
+                continue
+            try:
+                data = json.loads(data_bytes.decode('utf-8'))
+                for item in data.get("items", []):
+                    vid_id = item.get("id", {}).get("videoId")
+                    snippet = item.get("snippet", {})
+                    pub_at = snippet.get("publishedAt")
+                    title_text = snippet.get("title", "")
                     
-                    # Strict 7-day rule for trending RSS
-                    if days_old <= 7:
-                        rss_videos_draft.append({
-                            "id": vid_id,
-                            "title": title.text.strip(),
-                            "channel": channel["name"],
-                            "published_at": pub_parsed.isoformat()
-                        })
-                        all_video_ids.add(vid_id)
-        except Exception as e:
-            print(f"[!] RSS parse error for channel {channel['name']}: {e}")
+                    if vid_id and pub_at:
+                        pub_parsed = datetime.fromisoformat(pub_at.replace("Z", "+00:00"))
+                        days_old = (now - pub_parsed).days
+                        if days_old <= 7:
+                            rss_videos_draft.append({
+                                "id": vid_id,
+                                "title": title_text,
+                                "channel": channel["name"],
+                                "published_at": pub_parsed.isoformat()
+                            })
+                            all_video_ids.add(vid_id)
+            except Exception as e:
+                print(f"[!] API fetch failed for latest videos of channel {channel['name']}: {e}")
+    else:
+        print("[*] Processing YouTube Channel RSS feeds for Trending videos (last 7 days)...")
+        for channel in YOUTUBE_CHANNELS:
+            url = f"https://www.youtube.com/feeds/videos.xml?channel_id={channel['id']}"
+            xml_data = make_request(url)
+            time.sleep(1.5) # Prevent YouTube CDN rate limiting/404 blocks
+            if not xml_data:
+                continue
+            try:
+                ns = {'yt': 'http://www.youtube.com/xml/schemas/2015', 'atom': 'http://www.w3.org/2005/Atom'}
+                root = ET.fromstring(xml_data)
+                for entry in root.findall('atom:entry', ns):
+                    video_id_el = entry.find('yt:videoId', ns)
+                    title = entry.find('atom:title', ns)
+                    published = entry.find('atom:published', ns)
+                    
+                    if video_id_el is not None and title is not None and published is not None:
+                        vid_id = video_id_el.text.strip()
+                        pub_parsed = datetime.fromisoformat(published.text.replace("Z", "+00:00"))
+                        days_old = (now - pub_parsed).days
+                        
+                        if days_old <= 7:
+                            rss_videos_draft.append({
+                                "id": vid_id,
+                                "title": title.text.strip(),
+                                "channel": channel["name"],
+                                "published_at": pub_parsed.isoformat()
+                            })
+                            all_video_ids.add(vid_id)
+            except Exception as e:
+                print(f"[!] RSS parse error for channel {channel['name']}: {e}")
             
     # ── PHASE 2: POPULAR SEARCHES (Growing all-time) ──
     growing_draft = []

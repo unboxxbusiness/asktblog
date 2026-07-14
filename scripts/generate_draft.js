@@ -96,7 +96,7 @@ async function main() {
   console.log(topYT);
 
   const prompt = `You are the Lead Editor for TheAskt (an educational tech, AI, and automation blog).
-Your task is to review today's research trends and draft an optimized, highly engaging, and technical article for our readers.
+Your task is to review today's research trends and draft an optimized, highly engaging, technical, and data-rich article for our readers. The article must avoid generic fluff, contain actual technical depth, use real-world statistics or architectural specs, and provide immediate value to developers and business operators.
 
 ### Recently Covered Articles (DO NOT write about these topics or use similar titles):
 ${recentArticlesList}
@@ -136,15 +136,36 @@ Your "content" string MUST strictly utilize standard HTML5 tags and follow this 
 
 1. **GEO Takeaways Section**: Add a '<div class="geo-takeaways"><ul><li>Bullet 1</li>...</ul></div>' at the very beginning of the body.
 2. **Authority Citations**: Add a '<div class="geo-citations"><a href="...">Source Name</a>...</div>' referencing the source URLs.
-3. **Heading Hierarchy**: Use exactly these six H2 headings in sequence, written strictly as native HTML tags (do NOT use markdown '#' or '##' hashes):
+3. **Heading Hierarchy**: Use exactly these seven H2 headings in sequence, written strictly as native HTML tags (do NOT use markdown '#' or '##' hashes):
    - '<h2>Introduction: [Topic Subtitle]</h2>'
    - '<h2>What Happened? [Context / News Update]</h2>'
    - '<h2>Why It Matters</h2>'
    - '<h2>Who Should Care?</h2>' (Followed by exactly three h3 sub-sections: '<h3>1. Students and Graduates</h3>', '<h3>2. Freelancers and Consultants</h3>', '<h3>3. Businesses</h3>')
-   - '<h2>How Does It Work?</h2>' (Must include an interactive Python or Javascript code block inside '<pre><code>...</code></pre>' and a detailed checklist)
-   - '<h2>What Should You Do Next?</h2>' (Must list exactly 3 numbered steps starting with "1. Step 1 (Action): ...")
-4. **Structured Q&A FAQ Block**: End the content body with exactly 4 detailed Q&As inside '<div class="geo-faq"><div class="faq-item"><h4 class="faq-question">Question?</h4><p class="faq-answer">Detailed Answer.</p></div>...</div>'.
-   * IMPORTANT: The FAQ block must terminate with exactly two closing divs ('</div>\\n</div>') to prevent React hydration errors. Do NOT add a third closing div.
+   - '<h2>How Does It Work? [Technical Details / Workflow]</h2>'
+     * For Technical Categories (AI Tools, Technology, Automation, CRM): Include a structured code block inside '<pre><code>...</code></pre>'.
+     * For Non-Technical Categories (Marketing, Career, Business Growth, AI News, Education, Productivity): Include a Mermaid.js diagram wrapped in '<div class="geo-mermaid"> ... </div>'. The portal renders it automatically.
+       - Choose the best diagram type per category:
+         * 'flowchart TD' - vertical top-down hierarchy by default for all flowchart diagrams (prevents horizontal cutoff and fits screens better)
+         * 'sequenceDiagram' - actor message flow (Automation, CRM)
+         * 'stateDiagram-v2' - state transitions (Education)
+       - Use node shapes: ([...]) for rounded start/end, [...] for process, {...} for decision, [(...)] for database.
+       - Annotate edges with -->|Label| for meaningful transitions.
+       - Keep focused: 4-7 nodes maximum for readability.
+       - Example for AI News:
+         <div class="geo-mermaid">
+         flowchart TD
+           A([VC Funding]) -->|Capital| B[GPU Buildout]
+           A -->|Data Budget| C[(Dataset Curation)]
+           B -->|Compute| D[Startup Apps]
+           C -->|Context| D
+           D -->|Subscriptions| E{Revenue?}
+           E -->|Yes| F([Profitable])
+           E -->|No| G[Cost Spiral]
+         </div>
+   - '<h2>What Should You Do Next? [Actionable Learning Path]</h2>' (Must list exactly 3 numbered steps starting with "1. Step 1 (Action): ...")
+   - '<h2>Final Thoughts: [Motivational Niche Subtitle]</h2>' (Must contain a brief closing and naturally weave in a link to https://theaskt.org, e.g., '<a href="https://theaskt.org">theaskt.org</a>')
+4. **Structured Q&A FAQ Block**: End the content body with exactly 6 detailed Q&As inside '<div class="geo-faq"><div class="faq-item"><h4 class="faq-question">Question?</h4><p class="faq-answer">Detailed Answer.</p></div>...</div>'.
+   * IMPORTANT: The FAQ block must terminate with exactly two closing divs ('</div>\n</div>') to prevent React hydration errors. Do NOT add a third closing div.
 `;
 
   console.log('[*] Contacting OpenAI API...');
@@ -156,13 +177,13 @@ Your "content" string MUST strictly utilize standard HTML5 tags and follow this 
         'Authorization': `Bearer \${apiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4o',
         messages: [
-          { role: 'system', content: 'You are a professional tech blog editor. You write high-quality articles and output strictly formatted JSON objects.' },
+          { role: 'system', content: 'You are a professional tech blog editor. You write high-quality, technical, and data-rich articles, and output strictly formatted JSON objects.' },
           { role: 'user', content: prompt }
         ],
         response_format: { type: 'json_object' },
-        temperature: 0.7
+        temperature: 0.5
       })
     });
 

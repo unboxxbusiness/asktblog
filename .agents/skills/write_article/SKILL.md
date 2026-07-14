@@ -33,27 +33,40 @@ Always choose the unpublished item with the highest `viral_score` that matches o
 
 ## Part 3: Mandatory Article Structure
 
-Every article MUST follow this exact 13-section layout within the database `content` column:
+Every article MUST follow this exact layout within the database `content` column, containing actual technical depth, real-world statistics, and zero generic fluff:
 
-1. **Viral Headline** (formulas below)
-2. **Key Takeaways (TL;DR)**: Mapped in `<div class="geo-takeaways">` (GEO block)
-3. **What Happened?**: Clear timeline and details of the news/announcement
-4. **Why It Matters?**: Context and significance
-5. **Who Should Care?**: Mapped by audience (Students, Freelancers, Businesses)
-6. **Career Impact**: Specific career paths, opportunities, or skills to learn
-7. **Business Impact**: How businesses can deploy this to cut costs or grow
-8. **How Does It Work?**: Technical explainer with comparisons, pros/cons, and a detailed HTML Table
-9. **What Should You Do Next?**: A step-by-step action plan for readers
-10. **Expert Take**: Highlighted quote block (`<blockquote>`) giving a professional assessment
-11. **Resources & Citations**: Mapped in `<div class="geo-citations">` referencing original URLs (GEO block)
-12. **Frequently Asked Questions**: Mapped in `<div class="geo-faq">` containing at least 5 structured Q&As (GEO block)
-13. **Sources**: Links to the original blogs, papers, or YouTube references used
+1. **Key Takeaways (TL;DR)**: Mapped in `<div class="geo-takeaways">` (GEO block at the very beginning of the body).
+2. **Authority Citations**: Mapped in `<div class="geo-citations">` containing outbound links to at least 3 high-authority original sources (GEO block).
+3. **Heading Hierarchy**: Use exactly these seven H2 headings in sequence, written strictly as native HTML tags (do NOT use markdown '#' or '##' hashes):
+   - `<h2>Introduction: [Topic Subtitle]</h2>`
+   - `<h2>What Happened? [Context / News Update]</h2>`
+   - `<h2>Why It Matters</h2>`
+   - `<h2>Who Should Care?</h2>` (Followed by exactly three h3 sub-sections: `<h3>1. Students and Graduates</h3>`, `<h3>2. Freelancers and Consultants</h3>`, `<h3>3. Businesses</h3>`)
+   - `<h2>How Does It Work? [Technical Details / Workflow]</h2>`
+     * **For Technical Categories (AI Tools, Technology, Automation, CRM):** Include a structured code block inside `<pre><code>...</code></pre>`.
+     * **For Non-Technical Categories (Marketing, Career, Business Growth, AI News, Education, Productivity):** Include a Mermaid.js diagram inside `<div class="geo-mermaid"> ... </div>`. The portal renders it automatically as a professional interactive canvas.
+       - Choose the best diagram type per category:
+         * `flowchart TD` — vertical top-down hierarchy by default for all flowchart paths (optimizes mobile viewport fit and layout flow)
+         * `sequenceDiagram` — Automation, CRM (actor interaction / webhook flow)
+         * `stateDiagram-v2` — Education (learning progression states)
+       - Use node shapes for semantic clarity: `([...])` rounded for start/end, `[...]` for process, `{...}` for decision, `[(...)` for database.
+       - Annotate edges with `-->|Label|` for meaningful transitions.
+       - Keep focused: 4–7 nodes max.
+   - `<h2>What Should You Do Next? [Actionable Learning Path]</h2>` (Must list exactly 3 numbered steps starting with "1. Step 1 (Action): ...")
+   - `<h2>Final Thoughts: [Motivational Niche Subtitle]</h2>` (Must contain a brief closing and naturally weave in a link to https://theaskt.org, e.g. `<a href="https://theaskt.org">theaskt.org</a>`)
+4. **Structured Q&A FAQ Block**: End the content body with exactly 6 detailed Q&As inside '<div class="geo-faq"><div class="faq-item"><h4 class="faq-question">Question?</h4><p class="faq-answer">Detailed Answer.</p></div>...</div>'.
+   * IMPORTANT: The FAQ block must terminate with exactly two closing divs ('</div>\n</div>') to prevent React hydration errors. Do NOT add a third closing div.
+
+---
+
+## Part A: Google Antigravity 2.0 Writing Engine
+* Content writing is handled directly by the built-in Google Antigravity 2.0 content generator (agentic file creation) inside workspace sessions, resolving draft creation without requiring third-party API key configurations.
 
 ---
 
 ## Part 4: Viral Headline Formulas
 
-Choose one of these formulas to frame the article title:
+Choose one of these formulas to frame the article title (keep under 60 characters):
 - `Google Just Released _______ — Here's What It Means for You`
 - `ChatGPT Can Now _______ — 5 Ways to Use It Today`
 - `This AI Tool Saved _______ Hours Per Week`
@@ -66,19 +79,20 @@ Choose one of these formulas to frame the article title:
 
 ---
 
-## Part 5: E-E-A-T Quality Signals
+## Part 5: E-E-A-T Quality Signals & Content Depth
 
 Ensure the draft contains:
 - **Author**: "TheAskt Editorial Team" (or specific expert if asked)
-- **Citations**: Outbound links to at least 3 high-authority original sources (e.g. OpenAI blog, Google AI Blog, or verified YouTube channel)
-- **FAQs**: Minimum of 5 detailed Q&As inside the GEO container
-- **HTML Table**: High-quality comparison tables or parameter breakdowns inside section 8
+- **High Data Density**: Include real-world numbers, speed/pricing metrics, or model parameters (no placeholder text).
+- **Citations**: Outbound links to at least 3 high-authority original sources inside the `<div class="geo-citations">` container.
+- **FAQs**: Minimum of 4 detailed Q&As inside the GEO container.
+- **Flowchart or Code Block**: Section 8 must strictly use either a code block (for technical) or a branching `<flowchart>` canvas (for non-technical).
 
 ---
 
 ## Part 6: Write Draft & Execute Publication
 
-1. Save the draft inside `scripts/draft_article.json` using the following exact format:
+1. Save the draft inside the root folder `draft_article.json` using the following exact format:
 ```json
 {
   "title": "Viral Headline",
@@ -96,7 +110,7 @@ Ensure the draft contains:
   "source_name": "OpenAI Blog",
   "source_url": "https://openai.com/blog/gpt-5",
   "research_ref": "top_stories[0]",
-  "content": "Full article HTML with <div class=\"geo-takeaways\">, <div class=\"geo-citations\">, and <div class=\"geo-faq\"> embedded."
+  "content": "Full article HTML with takeaways, citations, and FAQ blocks embedded."
 }
 ```
 
@@ -104,7 +118,7 @@ Ensure the draft contains:
 ```bash
 pnpm publish-article
 ```
-This inserts the record into Turso, triggers FCM notifications, pings Next.js revalidation, dispatches sitemap pings to Google & Bing, and outputs a complete console report.
+This inserts the record into Turso, deletes `draft_article.json`, triggers FCM notifications, pings Next.js revalidation, dispatches sitemap pings to Google & Bing, and outputs a complete console report.
 
 ---
 

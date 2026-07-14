@@ -57,14 +57,41 @@ Every article published on the site MUST strictly follow the exact same HTML sec
    * `### 2. Freelancers and Consultants` (or `### 2. Business Analysts` / `### 2. Business Owners`)
    * `### 3. Businesses` (or `### 3. Content Creators` / `### 3. Professionals`)
 5. **How Does It Work?**:
-   `## How Does It Work? [Technical Details]`
-   *How to implement it, code block examples, or step-by-step mechanisms.*
+   `## How Does It Work? [Technical Details / Workflow]`
+   *For Technical Categories (AI Tools, Technology, Automation, CRM):* Include a structured code block inside `<pre><code>...</code></pre>`.
+   *For Non-Technical Categories (Marketing, Career, Business Growth, AI News, Education, Productivity):* Include a Mermaid.js diagram. The portal will automatically render it as a professional, interactive diagram canvas.
+
+   **Mermaid diagram rules:**
+   - Wrap the diagram text in `<div class="geo-mermaid"> ... </div>` tags.
+   - The text inside must be a valid Mermaid definition. All flowcharts must use a vertical layout (`flowchart TD` or top-down) by default to prevent extreme horizontal overflow and optimize mobile reading.
+     * `flowchart TD` — vertical top-down hierarchy (standard for AI News, Marketing, Business Growth, Career, AI Tools, Education, Productivity)
+     * `sequenceDiagram` — actor message flow (Automation, CRM workflows)
+     * `stateDiagram-v2` — state transitions (Education learning paths)
+   - Write clean, readable Mermaid syntax. Example:
+     ```
+     flowchart TD
+       A([User Query]) -->|Search| B[Index Crawl]
+       B -->|Ranked| C{Threshold Met?}
+       C -->|Yes| D([Cited Result])
+       C -->|No| E[Re-rank Loop]
+       E --> B
+     ```
+   - Use meaningful node labels. Use `-->|Label|` for annotated edges.
+   - Use node shapes for semantic clarity: `([...])` for start/end rounded, `[...]` for process, `{...}` for decision, `[(...)` for database.
+   - Keep the diagram focused: 4–7 nodes max for readability.
 6. **What Should You Do Next?**:
    `## What Should You Do Next? [Actionable Learning Path]`
-   *Exactly three numbered steps to take.*
-7. **Citations Container**:
+   *Must contain exactly three numbered steps structured as:*
+   - `1. Step 1 (Action): ...`
+   - `2. Step 2 (Action): ...`
+   - `3. Step 3 (Action): ...`
+   *These will be parsed and rendered as an interactive, checkable Progress Checklist.*
+7. **Final Thoughts**:
+   `## Final Thoughts: [Motivational Niche Subtitle]`
+   *A short, encouraging paragraph summarizing the key lessons. You MUST naturally weave in a contextual Call to Action including a markdown link pointing back to the official portal: https://theaskt.org (e.g. "...find additional guidelines on [theaskt.org](https://theaskt.org)" or "...sign up for free courses on [theaskt.org](https://theaskt.org)").*
+8. **Citations Container**:
    `<div class="geo-citations">...</div>`
-8. **FAQ Container**:
+9. **FAQ Container**:
    `<div class="geo-faq"><div class="faq-item"><h4 class="faq-question">...</h4><p class="faq-answer">...</p></div>...</div></div>`
    *Must contain exactly four detailed FAQ Q&A items, matching the depth and wordcount parameters of the first article.*
 
@@ -103,4 +130,4 @@ To ensure all articles rank highly on standard Google Search, Google AI Overview
 ## Mandatory Code Generation & Migration Rules
 1. **New Article Generation**: Every new article drafted by the agent MUST strictly query this rulebook first and copy this structure, metadata parameters, and formatting without deviation.
 2. **Database Verification**: All entries in the database must be routinely verified against these structural keys. Any column content found to violate these parameters must be immediately updated.
-3. **Deduplication Check**: Before drafting a new article in chat, the agent MUST inspect the live portal website (by fetching `https://theaskt.com` or its RSS feed at `https://theaskt.com/feed.xml` using `read_url_content`) to compile the list of recently published article titles and slugs. The agent MUST NOT draft or write any article whose topic, title, or slug is a duplicate or highly similar (>80% similarity) to already published articles.
+3. **Deduplication Check**: Before drafting a new article in chat, the agent MUST inspect the live portal website (by fetching `https://theaskt.org` or its RSS feed at `https://theaskt.org/feed.xml` using `read_url_content`) to compile the list of recently published article titles and slugs. The agent MUST NOT draft or write any article whose topic, title, or slug is a duplicate or highly similar (>80% similarity) to already published articles.
