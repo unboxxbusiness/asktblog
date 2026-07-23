@@ -6,7 +6,8 @@ import ArticleBody from "@/features/articles/ArticleBody";
 import CourseAccordionSidebar from "@/components/courses/CourseAccordionSidebar";
 import { ArrowLeft, ArrowRight, Clock, Sparkles, Award, ShieldCheck, CheckCircle2 } from "lucide-react";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 interface PageProps {
   params: Promise<{ courseSlug: string }>;
@@ -31,11 +32,30 @@ export default async function GoogleStyleCourseViewer({ params }: PageProps) {
     notFound();
   }
 
-  // Fetch all published course articles to populate sidebar accordion
+  // Fetch all published course articles
   const allCourses = await getCourses();
 
-  // Find all sibling modules belonging to this course series
-  const courseModules = allCourses.map((c, i) => ({
+  // Determine parent course series title for current article
+  const currentSeriesTitle = (currentArticle.sourceName && currentArticle.sourceName.trim().length > 3)
+    ? currentArticle.sourceName.trim().toLowerCase()
+    : currentArticle.title.replace(/^Part\s*\d+:\s*/i, "").split("—")[0].split("-")[0].trim().toLowerCase();
+
+  // Filter ONLY sibling modules belonging to this exact course series
+  const siblingArticles = allCourses.filter((c) => {
+    const cSeries = (c.sourceName && c.sourceName.trim().length > 3)
+      ? c.sourceName.trim().toLowerCase()
+      : c.title.replace(/^Part\s*\d+:\s*/i, "").split("—")[0].split("-")[0].trim().toLowerCase();
+    return cSeries === currentSeriesTitle;
+  });
+
+  // Sort modules Part 1 to Part 5
+  siblingArticles.sort((a, b) => {
+    const partA = parseInt(a.title.match(/Part\s*(\d+)/i)?.[1] || "1", 10);
+    const partB = parseInt(b.title.match(/Part\s*(\d+)/i)?.[1] || "1", 10);
+    return partA - partB;
+  });
+
+  const courseModules = siblingArticles.map((c, i) => ({
     id: c.id,
     title: c.title,
     slug: c.slug,
@@ -48,7 +68,9 @@ export default async function GoogleStyleCourseViewer({ params }: PageProps) {
   const prevModule = currentIdx > 0 ? courseModules[currentIdx - 1] : null;
   const nextModule = currentIdx < courseModules.length - 1 ? courseModules[currentIdx + 1] : null;
 
-  const cleanCourseTitle = currentArticle.title.replace(/^Part\s*\d+:\s*/i, "").split("—")[0].trim();
+  const cleanCourseTitle = (currentArticle.sourceName && currentArticle.sourceName.trim().length > 3)
+    ? currentArticle.sourceName.trim()
+    : currentArticle.title.replace(/^Part\s*\d+:\s*/i, "").split("—")[0].trim();
 
   return (
     <div className="min-h-screen bg-background">
