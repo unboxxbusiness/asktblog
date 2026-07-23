@@ -22,30 +22,6 @@ def load_env(env_path):
                     env[k] = v.strip('"\'')
     return env
 
-def search_youtube_videos(query, api_key, max_results=3):
-    if not api_key:
-        return []
-    try:
-        url = f"https://www.googleapis.com/youtube/v3/search?part=snippet&q={urllib.parse.quote(query)}&type=video&maxResults={max_results}&key={api_key}"
-        req = urllib.request.Request(url)
-        with urllib.request.urlopen(req) as resp:
-            data = json.loads(resp.read().decode('utf-8'))
-            items = data.get('items', [])
-            results = []
-            for item in items:
-                snippet = item.get('snippet', {})
-                results.append({
-                    'video_id': item.get('id', {}).get('videoId'),
-                    'title': snippet.get('title'),
-                    'channel': snippet.get('channelTitle'),
-                    'description': snippet.get('description'),
-                    'published_at': snippet.get('publishedAt')
-                })
-            return results
-    except Exception as e:
-        log_print(f"[!] YouTube API search error: {e}")
-        return []
-
 def slugify(text):
     import re
     text = text.lower()
@@ -76,7 +52,6 @@ def publish_to_turso(env, article_data):
     now_ms = int(time.time() * 1000)
     reading_time = calculate_reading_time(article_data['content'])
 
-    # Check if slug exists
     check_payload = {
         "requests": [
             {
@@ -105,14 +80,14 @@ def publish_to_turso(env, article_data):
         UPDATE articles SET
             title = ?, excerpt = ?, content = ?, category = ?, image = ?, author = ?,
             updated_at = ?, featured = ?, status = 'published', meta_title = ?, meta_description = ?,
-            keywords = ?, reading_time = ?, tags = ?, viral_score = ?, source_name = ?, source_url = ?
+            keywords = ?, reading_time = ?, tags = ?, content_type = 'course', viral_score = ?, source_name = ?, source_url = ?
         WHERE slug = ?
         """
         args = [
             {"type": "text", "value": article_data['title']},
             {"type": "text", "value": article_data['excerpt']},
             {"type": "text", "value": article_data['content']},
-            {"type": "text", "value": article_data['category']},
+            {"type": "text", "value": article_data.get('category', 'Course')},
             {"type": "text", "value": article_data['image']},
             {"type": "text", "value": article_data['author']},
             {"type": "integer", "value": str(now_ms)},
@@ -122,14 +97,14 @@ def publish_to_turso(env, article_data):
             {"type": "text", "value": article_data.get('keywords', '')},
             {"type": "integer", "value": str(reading_time)},
             {"type": "text", "value": article_data.get('tags', '')},
-            {"type": "integer", "value": str(article_data.get('viral_score', 90))},
+            {"type": "integer", "value": str(article_data.get('viral_score', 95))},
             {"type": "text", "value": article_data.get('source_name', '')},
             {"type": "text", "value": article_data.get('source_url', '')},
             {"type": "text", "value": slug}
         ]
         payload = {"requests": [{"type": "execute", "stmt": {"sql": update_sql, "args": args}}, {"type": "close"}]}
     else:
-        new_id = f"art_{now_ms}_{slug[:10]}"
+        new_id = f"course_{now_ms}_{slug[:10]}"
         insert_sql = """
         INSERT INTO articles (
             id, title, slug, excerpt, content, category, image, author,
@@ -144,7 +119,7 @@ def publish_to_turso(env, article_data):
             {"type": "text", "value": slug},
             {"type": "text", "value": article_data['excerpt']},
             {"type": "text", "value": article_data['content']},
-            {"type": "text", "value": article_data['category']},
+            {"type": "text", "value": article_data.get('category', 'Course')},
             {"type": "text", "value": article_data['image']},
             {"type": "text", "value": article_data['author']},
             {"type": "integer", "value": str(now_ms)},
@@ -156,7 +131,7 @@ def publish_to_turso(env, article_data):
             {"type": "text", "value": article_data.get('keywords', '')},
             {"type": "integer", "value": str(reading_time)},
             {"type": "text", "value": article_data.get('tags', '')},
-            {"type": "integer", "value": str(article_data.get('viral_score', 90))},
+            {"type": "integer", "value": str(article_data.get('viral_score', 95))},
             {"type": "text", "value": article_data.get('source_name', '')},
             {"type": "text", "value": article_data.get('source_url', '')}
         ]
@@ -165,7 +140,7 @@ def publish_to_turso(env, article_data):
     try:
         req = urllib.request.Request(pipeline_url, data=json.dumps(payload).encode('utf-8'), headers=headers, method='POST')
         with urllib.request.urlopen(req) as resp:
-            log_print(f"[+] Published to Turso: {article_data['title']}")
+            log_print(f"[+] Published Course Module to Turso: {article_data['title']}")
             return True
     except Exception as e:
         log_print(f"[!] Error publishing to Turso: {e}")
@@ -200,7 +175,7 @@ def main():
     draft_file = os.path.join(os.getcwd(), 'draft_course_series.json')
 
     if not os.path.exists(draft_file):
-        log_print("[!] draft_course_series.json not found. Please create it first.")
+        log_print("[!] draft_course_series.json not found.")
         return
 
     with open(draft_file, 'r', encoding='utf-8') as f:
@@ -209,36 +184,31 @@ def main():
     series_title = series_data.get('series_title', 'Masterclass Series')
     articles = series_data.get('articles', [])
 
-    if len(articles) != 5:
-        log_print(f"[!] Expected 5 articles in series, found {len(articles)}")
-
-    # Pre-generate slugs
     for i, art in enumerate(articles):
         art['slug'] = slugify(art['title'])
         art['part'] = i + 1
+        art['category'] = art.get('category', 'Course')
 
-    # Enrich each article with Series Header Banner & Course Syllabus Widget
     slugs = [art['slug'] for art in articles]
-    category = articles[0].get('category', 'Automation')
+    category = "Course"
 
     for i, art in enumerate(articles):
         part_num = i + 1
         prev_slug = slugs[i - 1] if i > 0 else None
         next_slug = slugs[i + 1] if i < len(slugs) - 1 else None
 
-        # Build Series Header
         nav_html = ""
         if prev_slug:
-            nav_html += f'<a href="/articles/{prev_slug}" class="text-primary hover:underline">← Part {part_num - 1}</a> '
+            nav_html += f'<a href="/courses/{prev_slug}" class="text-primary hover:underline">← Part {part_num - 1}</a> '
         if prev_slug and next_slug:
             nav_html += ' | '
         if next_slug:
-            nav_html += f'<a href="/articles/{next_slug}" class="text-primary hover:underline">Part {part_num + 1} →</a>'
+            nav_html += f'<a href="/courses/{next_slug}" class="text-primary hover:underline">Part {part_num + 1} →</a>'
 
         header_banner = f"""
 <div class="bg-primary/5 border border-primary/20 rounded-xl p-4 my-6">
   <div class="flex items-center justify-between text-xs font-semibold text-primary uppercase tracking-wider mb-1">
-    <span>🎓 Course Series: Part {part_num} of 5</span>
+    <span>🎓 Course Series: Part {part_num} of {len(articles)}</span>
     <span>{series_title}</span>
   </div>
   <div class="text-sm font-medium text-foreground flex items-center justify-between">
@@ -248,35 +218,30 @@ def main():
 </div>
 """
 
-        # Build Course Syllabus Widget
         syllabus_items = ""
         for j, s_art in enumerate(articles):
             p = j + 1
             if p == part_num:
                 syllabus_items += f'<li class="font-bold text-primary py-1">👉 Part {p}: {s_art["title"]} (Current Module)</li>'
             elif p < part_num:
-                syllabus_items += f'<li class="py-1"><a href="/articles/{s_art["slug"]}" class="text-muted-foreground hover:text-foreground">✅ Part {p}: {s_art["title"]}</a></li>'
+                syllabus_items += f'<li class="py-1"><a href="/courses/{slugs[j]}" class="text-muted-foreground hover:text-foreground">✅ Part {p}: {s_art["title"]}</a></li>'
             else:
-                syllabus_items += f'<li class="py-1"><a href="/articles/{s_art["slug"]}" class="text-muted-foreground hover:text-foreground">🔒 Part {p}: {s_art["title"]}</a></li>'
+                syllabus_items += f'<li class="py-1"><a href="/courses/{slugs[j]}" class="text-muted-foreground hover:text-foreground">🔒 Part {p}: {s_art["title"]}</a></li>'
 
         syllabus_widget = f"""
 <div class="bg-secondary/40 border border-border rounded-xl p-6 my-8">
-  <h3 class="text-lg font-bold text-foreground mb-4">Complete 5-Part Course Syllabus</h3>
+  <h3 class="text-lg font-bold text-foreground mb-4">Complete Course Syllabus</h3>
   <ol class="list-none space-y-1 text-sm">
     {syllabus_items}
   </ol>
 </div>
 """
 
-        # Inject header and syllabus into content
-        art['content'] = header_banner + art['content'] + syllabus_widget
-
-        # Publish to Turso
+        art['content'] = header_banner + art.get('raw_body', art.get('content', '')) + syllabus_widget
         publish_to_turso(env, art)
 
-    # Trigger revalidation for all 5 slugs
     revalidate_urls(env, slugs, category)
-    log_print(f"[+] Successfully published 5-Part Course Series: '{series_title}' to Turso DB!")
+    log_print(f"[+] Successfully published Course Series: '{series_title}' to Turso DB under content_type='course'!")
 
 if __name__ == '__main__':
     main()

@@ -22,6 +22,7 @@ export const siteConfig = {
     "Education",
     "Marketing",
     "Productivity",
+    "Course",
   ] as const,
   // Mapping of category list for database search/query matches
   categoryMapping: {
@@ -36,6 +37,8 @@ export const siteConfig = {
     "education": "Education",
     "marketing": "Marketing",
     "productivity": "Productivity",
+    "course": "Course",
+    "courses": "Course",
     // Sub-category landing pages mapping (Resolves 404 for LearnHub Dropdowns)
     "learn-ai": "Education",
     "freelancing": "Career",

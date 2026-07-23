@@ -1,5 +1,5 @@
 import { db, articles } from "@/lib/db";
-import { eq, and, or, like, desc, not, lt, gt } from "drizzle-orm";
+import { eq, ne, and, or, like, desc, not, lt, gt } from "drizzle-orm";
 import { Article } from "@/db/schema";
 
 export async function getArticles(limit = 10, offset = 0): Promise<Article[]> {
@@ -7,7 +7,7 @@ export async function getArticles(limit = 10, offset = 0): Promise<Article[]> {
     return await db
       .select()
       .from(articles)
-      .where(eq(articles.status, "published"))
+      .where(and(eq(articles.status, "published"), ne(articles.contentType, "course")))
       .orderBy(desc(articles.publishedAt))
       .limit(limit)
       .offset(offset);
@@ -22,7 +22,7 @@ export async function getFeaturedArticles(limit = 3): Promise<Article[]> {
     return await db
       .select()
       .from(articles)
-      .where(and(eq(articles.status, "published"), eq(articles.featured, 1)))
+      .where(and(eq(articles.status, "published"), eq(articles.featured, 1), ne(articles.contentType, "course")))
       .orderBy(desc(articles.publishedAt))
       .limit(limit);
   } catch (error) {
@@ -36,7 +36,7 @@ export async function getTrendingArticles(limit = 5): Promise<Article[]> {
     return await db
       .select()
       .from(articles)
-      .where(eq(articles.status, "published"))
+      .where(and(eq(articles.status, "published"), ne(articles.contentType, "course")))
       .orderBy(desc(articles.views), desc(articles.publishedAt))
       .limit(limit);
   } catch (error) {
@@ -277,5 +277,18 @@ export async function getActiveCategoriesAndTags(): Promise<{ categories: string
   } catch (error) {
     console.error("Database query failed in getActiveCategoriesAndTags:", error);
     return { categories: [], tags: [] };
+  }
+}
+
+export async function getCourses(): Promise<Article[]> {
+  try {
+    return await db
+      .select()
+      .from(articles)
+      .where(and(eq(articles.status, "published"), eq(articles.contentType, "course")))
+      .orderBy(desc(articles.publishedAt));
+  } catch (error) {
+    console.error("Database query failed in getCourses:", error);
+    return [];
   }
 }
