@@ -314,3 +314,63 @@ export async function getDistinctCourseSeries(): Promise<Article[]> {
     return [];
   }
 }
+
+export interface CourseSeriesGroup {
+  courseTitle: string;
+  firstModuleSlug: string;
+  excerpt: string;
+  image: string;
+  author: string;
+  readingTime: number;
+  modules: Article[];
+}
+
+export async function getCourseSeriesGrouped(): Promise<CourseSeriesGroup[]> {
+  try {
+    const allCourseArticles = await getCourses();
+    const groupsMap = new Map<string, CourseSeriesGroup>();
+
+    allCourseArticles.forEach((art) => {
+      // Extract clean base title from Part 1 or title prefix
+      const cleanTitle = art.title.replace(/^Part\s*\d+:\s*/i, "").split("—")[0].trim();
+      const groupKey = cleanTitle.toLowerCase();
+
+      if (!groupsMap.has(groupKey)) {
+        groupsMap.set(groupKey, {
+          courseTitle: cleanTitle,
+          firstModuleSlug: art.slug,
+          excerpt: art.excerpt,
+          image: art.image,
+          author: art.author,
+          readingTime: art.readingTime || 5,
+          modules: [],
+        });
+      }
+
+      const group = groupsMap.get(groupKey)!;
+      group.modules.push(art);
+
+      // If this article is Part 1, prioritize its title, slug, and excerpt
+      if (art.title.toLowerCase().includes("part 1")) {
+        group.firstModuleSlug = art.slug;
+        group.excerpt = art.excerpt;
+        group.courseTitle = cleanTitle;
+      }
+    });
+
+    // Sort modules inside each course group (Part 1 to Part 5)
+    const result = Array.from(groupsMap.values());
+    result.forEach((grp) => {
+      grp.modules.sort((a, b) => {
+        const partA = parseInt(a.title.match(/Part\s*(\d+)/i)?.[1] || "1", 10);
+        const partB = parseInt(b.title.match(/Part\s*(\d+)/i)?.[1] || "1", 10);
+        return partA - partB;
+      });
+    });
+
+    return result;
+  } catch (error) {
+    console.error("Database query failed in getCourseSeriesGrouped:", error);
+    return [];
+  }
+}
