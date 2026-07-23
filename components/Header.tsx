@@ -183,6 +183,14 @@ export default function Header({ activeCategories = [] }: HeaderProps) {
             >
               AI Tools
             </Link>
+            <Link
+              href="/courses"
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                pathname.startsWith("/courses") ? "text-primary" : "text-muted-foreground"
+              }`}
+            >
+              Courses
+            </Link>
             <LearnHubDropdown activeCategories={activeCategories} />
             <button
               onClick={() => window.dispatchEvent(new Event("trigger-pwa-hub"))}
@@ -307,6 +315,18 @@ export default function Header({ activeCategories = [] }: HeaderProps) {
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Home
+            </Link>
+            <Link
+              href="/courses"
+              className={`text-lg font-semibold border-b border-border pb-2 flex items-center justify-between ${
+                pathname.startsWith("/courses") ? "text-primary" : "text-foreground"
+              }`}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              <span>Courses</span>
+              <span className="text-xs bg-primary/10 text-primary px-2.5 py-0.5 rounded-full font-mono">
+                5-Part Series
+              </span>
             </Link>
             <Link
               href="/about"

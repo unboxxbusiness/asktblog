@@ -121,6 +121,11 @@ export default function Footer({ activeCategories = [] }: FooterProps) {
           <div className="flex flex-col gap-3">
             <h3 className="font-heading font-semibold text-sm text-foreground uppercase tracking-wider">LearnHub</h3>
             <ul className="flex flex-col gap-2 text-xs text-muted-foreground">
+              <li>
+                <Link href="/courses" className="hover:text-primary font-semibold text-primary transition-colors flex items-center gap-1">
+                  🎓 Micro-Courses
+                </Link>
+              </li>
               {siteConfig.learnHubCategories
                 .filter((cat) => activeCategories.includes(cat.dbCategory))
                 .map((category) => (

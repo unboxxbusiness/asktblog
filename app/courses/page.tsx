@@ -1,202 +1,185 @@
 import React from "react";
 import Link from "next/link";
-import { getCourses } from "@/services/articles";
-import { Sparkles, Clock, ArrowRight, GraduationCap, Briefcase, Zap, Cpu, Award, ShieldCheck, CheckCircle } from "lucide-react";
+import { getDistinctCourseSeries } from "@/services/articles";
+import { Clock, ArrowRight, BookOpen, Layers, ChevronLeft, ChevronRight, Zap, GraduationCap, Briefcase, Cpu } from "lucide-react";
 
 export const revalidate = 300;
 
 export const metadata = {
-  title: "AI & Automation Learning Paths | TheAskt Skills",
-  description: "Google-inspired self-paced micro-courses designed to save 5 to 10 hours of work every week for students, professionals, and daily AI users.",
+  title: "Micro-Courses & Skill Paths | TheAskt",
+  description: "Notion-style clean 5-part self-paced micro-courses designed to save 5 to 10 hours of manual work every week.",
 };
 
-export default async function GoogleStyleCoursesPage() {
-  const allCourseArticles = await getCourses();
+interface CoursesPageProps {
+  searchParams: Promise<{ page?: string }>;
+}
 
-  // Group course articles into unique series
-  const courseSeriesMap = new Map<string, {
-    title: string;
-    slug: string;
-    excerpt: string;
-    category: string;
-    modules: typeof allCourseArticles;
-    image: string;
-  }>();
+export default async function NotionStyleCoursesPage({ searchParams }: CoursesPageProps) {
+  const { page } = await searchParams;
+  const currentPage = Math.max(1, parseInt(page || "1", 10));
+  const ITEMS_PER_PAGE = 6;
 
-  allCourseArticles.forEach((art) => {
-    // Extract base course title without Part prefix
-    const cleanTitle = art.title.replace(/^Part\s*\d+:\s*/i, "").split("—")[0].trim();
-    
-    if (!courseSeriesMap.has(cleanTitle)) {
-      courseSeriesMap.set(cleanTitle, {
-        title: cleanTitle,
-        slug: art.slug,
-        excerpt: art.excerpt || "Comprehensive 5-module practical learning path.",
-        category: art.category || "Automation",
-        modules: [],
-        image: art.image || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=1200"
-      });
-    }
-    courseSeriesMap.get(cleanTitle)!.modules.push(art);
-  });
+  // Fetch unique course series (NO DUPLICATES!)
+  const allCourses = await getDistinctCourseSeries();
+  const totalPages = Math.max(1, Math.ceil(allCourses.length / ITEMS_PER_PAGE));
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedCourses = allCourses.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
-  const courseList = Array.from(courseSeriesMap.values());
+  // SVG Topic Illustration Generator matching homepage SVG style
+  const renderSvgIllustration = (category: string, index: number) => {
+    const gradients = [
+      { from: "#3b82f6", to: "#1d4ed8" }, // Blue
+      { from: "#10b981", to: "#047857" }, // Emerald
+      { from: "#8b5cf6", to: "#6d28d9" }, // Purple
+      { from: "#f59e0b", to: "#b45309" }, // Amber
+    ];
+    const grad = gradients[index % gradients.length];
 
-  const tracks = [
-    { name: "🎓 Student Track", desc: "Exam prep, research, active recall & thesis automation", color: "from-blue-500/10 to-indigo-500/10 border-blue-500/20" },
-    { name: "💼 Professional Track", desc: "Executive reports, meeting notes & inbox zero workflows", color: "from-purple-500/10 to-violet-500/10 border-purple-500/20" },
-    { name: "⚡ Daily AI Users", desc: "Prompt shortcuts, browser extensions & daily file hacks", color: "from-amber-500/10 to-orange-500/10 border-amber-500/20" },
-    { name: "⚙️ Automation Skills", desc: "Production n8n, Make.com, LangGraph & MCP architectures", color: "from-emerald-500/10 to-teal-500/10 border-emerald-500/20" },
-  ];
+    return (
+      <div className="w-full h-36 bg-muted/30 relative flex items-center justify-center overflow-hidden border-b border-border/40">
+        <svg className="w-full h-full absolute inset-0 opacity-15" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <path d="0 0 L100 0 L100 100 Z" fill={`url(#grad-${index})`} />
+          <defs>
+            <linearGradient id={`grad-${index}`} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor={grad.from} />
+              <stop offset="100%" stopColor={grad.to} />
+            </linearGradient>
+          </defs>
+        </svg>
+        
+        {/* Topic SVG Icon Pill */}
+        <div className="z-10 flex flex-col items-center gap-2 p-3 bg-background/80 backdrop-blur-md border border-border/60 rounded-2xl shadow-xs text-center max-w-[80%]">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            {index % 4 === 0 && <Cpu className="w-5 h-5" />}
+            {index % 4 === 1 && <Zap className="w-5 h-5" />}
+            {index % 4 === 2 && <GraduationCap className="w-5 h-5" />}
+            {index % 4 === 3 && <Briefcase className="w-5 h-5" />}
+          </div>
+          <span className="text-[11px] font-mono font-medium tracking-tight text-foreground line-clamp-1">
+            {category || "Automation Path"}
+          </span>
+        </div>
+      </div>
+    );
+  };
 
   return (
-    <div className="min-h-screen bg-background">
-      
-      {/* 1. Google-Inspired Hero Banner */}
-      <section className="bg-slate-900 text-white py-16 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-emerald-600/20 opacity-40 blur-3xl pointer-events-none" />
-        <div className="max-w-7xl mx-auto space-y-6 relative z-10">
-          <div className="inline-flex items-center gap-2 bg-white/10 text-blue-300 border border-white/15 px-3.5 py-1.5 rounded-full text-xs font-semibold backdrop-blur-md">
-            <Sparkles className="w-4 h-4 text-blue-400" />
-            TheAskt Learning Paths & Skill Badges
-          </div>
-          
-          <h1 className="text-3xl sm:text-6xl font-black tracking-tight text-white max-w-4xl leading-tight">
-            Master Practical AI Systems. <br />
-            <span className="bg-gradient-to-r from-blue-400 via-indigo-300 to-emerald-400 bg-clip-text text-transparent">
-              Save 5 to 10 Hours Every Week.
-            </span>
-          </h1>
-
-          <p className="text-slate-300 text-base sm:text-xl max-w-2xl leading-relaxed">
-            Structured, 5-part self-paced learning paths designed for students, professionals, and developers. No fluff—just real-world skills and time savings.
-          </p>
-
-          {/* High-Impact Proof Metrics Bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-6 border-t border-slate-800 max-w-3xl">
-            <div className="space-y-1">
-              <span className="text-2xl font-bold text-white flex items-center gap-1.5">
-                <Clock className="w-5 h-5 text-emerald-400" />
-                5–10 hrs
-              </span>
-              <p className="text-xs text-slate-400 font-medium">Weekly Time Reclaimed</p>
-            </div>
-            <div className="space-y-1">
-              <span className="text-2xl font-bold text-white flex items-center gap-1.5">
-                <ShieldCheck className="w-5 h-5 text-blue-400" />
-                100% Free
-              </span>
-              <p className="text-xs text-slate-400 font-medium">Open Learning Access</p>
-            </div>
-            <div className="space-y-1">
-              <span className="text-2xl font-bold text-white flex items-center gap-1.5">
-                <Award className="w-5 h-5 text-amber-400" />
-                Skill Badges
-              </span>
-              <p className="text-xs text-slate-400 font-medium">Verified Frameworks</p>
-            </div>
-            <div className="space-y-1">
-              <span className="text-2xl font-bold text-white flex items-center gap-1.5">
-                <CheckCircle className="w-5 h-5 text-purple-400" />
-                5 Modules
-              </span>
-              <p className="text-xs text-slate-400 font-medium">Step-by-Step Sequence</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 2. Main Content Hub Container */}
-      <main className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8 space-y-14">
+    <div className="min-h-screen bg-background py-10 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto space-y-10">
         
-        {/* Track Category Overview Cards */}
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold text-foreground tracking-tight">Explore Learning Tracks</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {tracks.map((tr, idx) => (
-              <div key={idx} className={`bg-gradient-to-br ${tr.color} border rounded-2xl p-4 space-y-2`}>
-                <h3 className="font-bold text-foreground text-sm">{tr.name}</h3>
-                <p className="text-xs text-muted-foreground leading-relaxed">{tr.desc}</p>
-              </div>
-            ))}
+        {/* 1. Notion-Style Minimalist Header */}
+        <div className="space-y-3 border-b border-border/60 pb-8">
+          <div className="inline-flex items-center gap-2 text-xs font-mono bg-muted/60 text-muted-foreground px-3 py-1 rounded-md border border-border/40">
+            <BookOpen className="w-3.5 h-3.5 text-primary" />
+            TheAskt / Micro-Courses
           </div>
+          <h1 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">
+            Micro-Course Learning Paths
+          </h1>
+          <p className="text-muted-foreground text-sm sm:text-base max-w-2xl leading-relaxed">
+            Practical 5-part self-paced courses engineered to save 5 to 10 hours of manual work every week. Zero fluff, 100% actionable.
+          </p>
         </div>
 
-        {/* Learning Paths Cards Grid */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between border-b border-border/60 pb-4">
-            <div>
-              <h2 className="text-2xl font-bold text-foreground tracking-tight">Available Skill Paths</h2>
-              <p className="text-xs text-muted-foreground">Select a 5-module learning path to start building real-world automation skills.</p>
-            </div>
-            <span className="text-xs font-semibold text-primary bg-primary/10 px-3 py-1 rounded-full">
-              {courseList.length} Active Courses
-            </span>
+        {/* 2. Notion-Style Minimalist Course Grid */}
+        {allCourses.length === 0 ? (
+          <div className="text-center py-16 bg-card rounded-xl border border-border/60 space-y-2">
+            <p className="text-muted-foreground text-sm">No courses published yet.</p>
           </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {paginatedCourses.map((course, idx) => {
+              const cleanTitle = course.title.replace(/^Part\s*\d+:\s*/i, "").split("—")[0].trim();
 
-          {courseList.length === 0 ? (
-            <div className="text-center py-16 bg-card rounded-2xl border border-border/80 space-y-3">
-              <Sparkles className="w-8 h-8 text-primary mx-auto" />
-              <p className="text-muted-foreground text-sm">Course learning paths are updating. Run `python scripts/publish_course_series.py` to populate!</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {courseList.map((course, idx) => (
+              return (
                 <div
-                  key={idx}
-                  className="bg-card border border-border/80 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between group"
+                  key={course.id || course.slug}
+                  className="bg-card border border-border/60 rounded-xl overflow-hidden shadow-xs hover:border-border/90 hover:shadow-sm transition-all duration-200 flex flex-col justify-between"
                 >
-                  <div className="space-y-4">
-                    {/* Course Banner Image */}
-                    <div className="h-44 w-full relative overflow-hidden bg-muted">
-                      <img
-                        src={course.image}
-                        alt={course.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      <div className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md text-white text-[11px] font-semibold px-2.5 py-1 rounded-full flex items-center gap-1 border border-white/10">
-                        <Sparkles className="w-3 h-3 text-amber-400" />
-                        5-Module Path
-                      </div>
-                      <div className="absolute top-3 right-3 bg-emerald-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm">
-                        <Clock className="w-3 h-3" />
-                        Saves ~8h/wk
-                      </div>
-                    </div>
+                  {/* SVG Illustration Header (No Photo Stock Images!) */}
+                  {renderSvgIllustration(course.category || "Automation", idx)}
 
-                    {/* Course Info Body */}
-                    <div className="p-5 space-y-3">
-                      <span className="text-[11px] font-semibold text-primary bg-primary/10 px-2.5 py-0.5 rounded-full">
-                        {course.category || "Automation Track"}
-                      </span>
+                  {/* Card Content Body */}
+                  <div className="p-5 space-y-3 flex-1 flex flex-col justify-between">
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between text-[11px] font-mono">
+                        <span className="text-muted-foreground flex items-center gap-1">
+                          <Layers className="w-3.5 h-3.5 text-primary" />
+                          5 Modules
+                        </span>
+                        <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5" />
+                          Saves ~8h/wk
+                        </span>
+                      </div>
 
-                      <h3 className="font-bold text-foreground text-lg leading-snug group-hover:text-primary transition-colors line-clamp-2">
-                        <Link href={`/courses/${course.slug}`}>{course.title}</Link>
-                      </h3>
+                      <h2 className="font-bold text-foreground text-base leading-snug line-clamp-2 hover:text-primary transition-colors">
+                        <Link href={`/courses/${course.slug}`}>{cleanTitle}</Link>
+                      </h2>
 
                       <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
                         {course.excerpt}
                       </p>
                     </div>
-                  </div>
 
-                  {/* Footer CTA */}
-                  <div className="p-5 pt-0 mt-auto">
-                    <Link
-                      href={`/courses/${course.slug}`}
-                      className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors shadow-sm"
-                    >
-                      Start Learning Path
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
+                    <div className="pt-4 border-t border-border/40 mt-auto">
+                      <Link
+                        href={`/courses/${course.slug}`}
+                        className="inline-flex items-center justify-between w-full py-2 px-3 rounded-lg bg-muted/50 hover:bg-primary hover:text-primary-foreground text-xs font-semibold text-foreground transition-all duration-200"
+                      >
+                        <span>Start Course</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+              );
+            })}
+          </div>
+        )}
 
-      </main>
+        {/* 3. Notion-Style Pagination Bar */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between border-t border-border/60 pt-6">
+            <span className="text-xs text-muted-foreground font-mono">
+              Page {currentPage} of {totalPages} ({allCourses.length} Total Courses)
+            </span>
+
+            <div className="flex items-center gap-2">
+              {currentPage > 1 ? (
+                <Link
+                  href={`/courses?page=${currentPage - 1}`}
+                  className="inline-flex items-center gap-1 py-1.5 px-3 rounded-lg border border-border/60 bg-card text-xs font-medium text-foreground hover:bg-muted transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Previous
+                </Link>
+              ) : (
+                <button disabled className="inline-flex items-center gap-1 py-1.5 px-3 rounded-lg border border-border/40 bg-muted/30 text-xs font-medium text-muted-foreground opacity-50 cursor-not-allowed">
+                  <ChevronLeft className="w-4 h-4" />
+                  Previous
+                </button>
+              )}
+
+              {currentPage < totalPages ? (
+                <Link
+                  href={`/courses?page=${currentPage + 1}`}
+                  className="inline-flex items-center gap-1 py-1.5 px-3 rounded-lg border border-border/60 bg-card text-xs font-medium text-foreground hover:bg-muted transition-colors"
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
+              ) : (
+                <button disabled className="inline-flex items-center gap-1 py-1.5 px-3 rounded-lg border border-border/40 bg-muted/30 text-xs font-medium text-muted-foreground opacity-50 cursor-not-allowed">
+                  Next
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+      </div>
     </div>
   );
 }

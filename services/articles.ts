@@ -292,3 +292,25 @@ export async function getCourses(): Promise<Article[]> {
     return [];
   }
 }
+
+export async function getDistinctCourseSeries(): Promise<Article[]> {
+  try {
+    const allCourseArticles = await getCourses();
+    const uniqueMap = new Map<string, Article>();
+
+    allCourseArticles.forEach((art) => {
+      // Clean base title without Part 1 / Part 2 prefix
+      const baseKey = art.title.replace(/^Part\s*\d+:\s*/i, "").split("—")[0].trim().toLowerCase();
+      
+      // If Part 1 or first time seeing series key, register it
+      if (!uniqueMap.has(baseKey) || art.title.toLowerCase().includes("part 1")) {
+        uniqueMap.set(baseKey, art);
+      }
+    });
+
+    return Array.from(uniqueMap.values());
+  } catch (error) {
+    console.error("Database query failed in getDistinctCourseSeries:", error);
+    return [];
+  }
+}
