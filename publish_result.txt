@@ -1,4 +1,4 @@
-[*] Processing article: 'Claude Cowork 'Record a Skill' & Cursor 'Router': The July 2026 Shift to Autonomous Screen-to-Code Automation'
-[*] Target slug: 'claude-cowork-record-a-skill-cursor-router-the-july-2026-shift-to-autonomous-screen-to-code-automation'
-[*] Article slug 'claude-cowork-record-a-skill-cursor-router-the-july-2026-shift-to-autonomous-screen-to-code-automation' not found. Executing INSERT query...
-[+] SUCCESS: Live article 'Claude Cowork 'Record a Skill' & Cursor 'Router': The July 2026 Shift to Autonomous Screen-to-Code Automation' successfully published to Turso DB!
+[*] Processing article: 'Top 5 Trending AI Tools in 2026 That Will Save You 10 Hours Every Week'
+[*] Target slug: 'top-5-trending-ai-tools-in-2026-that-will-save-you-10-hours-every-week'
+[*] Article slug 'top-5-trending-ai-tools-in-2026-that-will-save-you-10-hours-every-week' not found. Executing INSERT query...
+[+] SUCCESS: Live article 'Top 5 Trending AI Tools in 2026 That Will Save You 10 Hours Every Week' successfully published to Turso DB!

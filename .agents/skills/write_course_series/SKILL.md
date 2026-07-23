@@ -1,23 +1,23 @@
 ---
 name: write_course_series
-description: Generate and publish the next 5-part micro-course series for TheAskt directly from course_topics_catalog.json whenever the user requests it.
+description: Generate and publish the next 5-part micro-course series for TheAskt by reading the topic directly from trending_1k_course_topics.md without requiring JSON catalog files or GitHub pushes.
 ---
 
-# Automatic Next Course Series Publishing Workflow
+# Simple Pure-Database Markdown-Based Course Series Workflow
 
-Whenever the user prompts you to write or publish the next course series (e.g. *"write next course series"*, *"publish next course"*), follow this automated 5-step workflow:
+> **CORE MANDATE**: Pick the next course topic directly from `trending_1k_course_topics.md` in `e:/brandapp/theaskt/`. Publish **DIRECTLY to Turso DB** via `python scripts/publish_course_series.py` and trigger Next.js cache revalidation. **NO GITHUB PUSH REQUIRED**.
 
 ---
 
-## Step 1: Pick Next Topic from Catalog
-1. Open `course_topics_catalog.json` located at the root of `e:/brandapp/theaskt/course_topics_catalog.json`.
-2. Locate the first topic with `"status": "draft"`.
-3. Read the `series_title`, `track`, `time_savings`, and `keywords`.
+## Step 1: Read Next Topic from `trending_1k_course_topics.md`
+1. Open `trending_1k_course_topics.md` located at `e:/brandapp/theaskt/trending_1k_course_topics.md`.
+2. Locate the next unpublished numbered topic sequentially (Topic #1, #2, #3, #4, #5... #1000).
+3. Read the exact topic title.
 
 ---
 
 ## Step 2: Generate 5-Module Curriculum (1,000+ Words Each)
-Generate 5 interconnected modules adhering strictly to `CONTENT_FRAMEWORK.md`:
+Generate 5 interconnected modules complying strictly with `CONTENT_FRAMEWORK.md`:
 * **Part 1: The Foundation & Trend Analysis** (Hook, trend context, why it saves 5-10 hrs/week, `<div class="geo-takeaways">`)
 * **Part 2: Deep Architecture & Flowcharts** (Deep dive mechanics, `<div class="geo-mermaid">` 40% zoom diagram, comparison tables)
 * **Part 3: Hands-On Tutorial & Tooling** (`<p>1. Step 1 (Action): ...</p>` checklist, code setup, step-by-step walkthrough)
@@ -26,37 +26,11 @@ Generate 5 interconnected modules adhering strictly to `CONTENT_FRAMEWORK.md`:
 
 ---
 
-## Step 3: Populate `draft_course_series.json`
-Save the generated draft to `draft_course_series.json`:
-```json
-{
-  "series_title": "<Clean Series Title from Catalog>",
-  "track": "<Track Name>",
-  "time_savings": "<Saves X Hours/Week>",
-  "articles": [
-    {
-      "title": "Part 1: The Foundation — ...",
-      "excerpt": "...",
-      "category": "Course",
-      "image": "https://images.unsplash.com/photo-...",
-      "author": "TheAskt Desk",
-      "viral_score": 98,
-      "raw_body": "HTML content complying with CONTENT_FRAMEWORK.md"
-    }
-  ]
-}
-```
-
----
-
-## Step 4: Execute Turso DB Publisher
-Run the Python publication script:
+## Step 3: Populate `draft_course_series.json` & Run Turso Publisher
+1. Save the draft to `draft_course_series.json`.
+2. Execute the Turso DB publisher:
 ```bash
 python scripts/publish_course_series.py
 ```
-This automatically links the 5 modules, tags them with `series_title`, registers them under `content_type = 'course'`, and revalidates live URLs.
-
----
-
-## Step 5: Update Topic Status in Catalog
-Update `course_topics_catalog.json` to mark the topic as `"status": "published"`.
+3. The script automatically inserts the 5 modules into Turso DB (`content_type = 'course'`) and revalidates live URLs at `https://theaskt.org/api/revalidate`.
+4. **DO NOT TRIGGER GITHUB PUSH**. The live site updates dynamically from Turso DB.
