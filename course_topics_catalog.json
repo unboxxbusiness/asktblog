@@ -1,0 +1,104 @@
+{
+  "total_topics": 1000,
+  "last_updated": "2026-07-23",
+  "description": "Master catalog of 1,000 course series topics for TheAskt. Whenever user asks to 'write next course series', agent picks the next draft topic, generates 5 modules adhering to CONTENT_FRAMEWORK.md, and publishes to Turso DB.",
+  "tracks": [
+    "🎓 Student Productivity & Academic AI",
+    "💼 Professional & Workplace Productivity",
+    "⚡ Daily AI Users & Personal Systems",
+    "🚀 AI Technical Skills & Developer Frameworks",
+    "⚙️ No-Code Automation & Workflow Systems"
+  ],
+  "topics": [
+    {
+      "id": 1,
+      "series_title": "How to Automate Email Marketing with n8n & AI Agents",
+      "track": "⚙️ No-Code Automation & Workflow Systems",
+      "time_savings": "Saves 10 Hours/Week",
+      "status": "published",
+      "category": "Course",
+      "keywords": ["n8n", "email marketing", "AI agents", "Resend"]
+    },
+    {
+      "id": 2,
+      "series_title": "Zapier vs Make.com vs n8n: Complete 2026 Enterprise No-Code Automation Blueprint",
+      "track": "⚙️ No-Code Automation & Workflow Systems",
+      "time_savings": "Saves 8 Hours/Week",
+      "status": "published",
+      "category": "Course",
+      "keywords": ["zapier", "make.com", "n8n", "no-code"]
+    },
+    {
+      "id": 3,
+      "series_title": "Active Recall Flashcards with ChatGPT & Anki: The 2026 Student Study Blueprint",
+      "track": "🎓 Student Productivity & Academic AI",
+      "time_savings": "Saves 10 Hours/Week",
+      "status": "draft",
+      "category": "Course",
+      "keywords": ["anki", "active recall", "chatgpt", "student"]
+    },
+    {
+      "id": 4,
+      "series_title": "Inbox Zero Guaranteed: Building an AI Email Classification Engine in Zapier",
+      "track": "💼 Professional & Workplace Productivity",
+      "time_savings": "Saves 8 Hours/Week",
+      "status": "draft",
+      "category": "Course",
+      "keywords": ["inbox zero", "zapier", "email automation", "productivity"]
+    },
+    {
+      "id": 5,
+      "series_title": "Prompt Engineering Shortcuts: 10 Meta-Prompts for Everyday Life & Work",
+      "track": "⚡ Daily AI Users & Personal Systems",
+      "time_savings": "Saves 5 Hours/Week",
+      "status": "draft",
+      "category": "Course",
+      "keywords": ["prompt engineering", "shortcuts", "chatgpt", "claude"]
+    },
+    {
+      "id": 6,
+      "series_title": "Prompt Engineering Masterclass: Zero-Shot, Few-Shot & Chain-of-Thought Frameworks",
+      "track": "🚀 AI Technical Skills & Developer Frameworks",
+      "time_savings": "Saves 10 Hours/Week",
+      "status": "draft",
+      "category": "Course",
+      "keywords": ["chain of thought", "few shot", "prompting", "llm"]
+    },
+    {
+      "id": 7,
+      "series_title": "Building Local Private AI Models with Ollama, DeepSeek-R1 & AnythingLLM",
+      "track": "🚀 AI Technical Skills & Developer Frameworks",
+      "time_savings": "Saves 10 Hours/Week",
+      "status": "draft",
+      "category": "Course",
+      "keywords": ["ollama", "deepseek-r1", "local llm", "anythingllm"]
+    },
+    {
+      "id": 8,
+      "series_title": "LangGraph State Machine Architecture: Building Resilient Multi-Agent Networks",
+      "track": "🚀 AI Technical Skills & Developer Frameworks",
+      "time_savings": "Saves 10 Hours/Week",
+      "status": "draft",
+      "category": "Course",
+      "keywords": ["langgraph", "agents", "state machine", "python"]
+    },
+    {
+      "id": 9,
+      "series_title": "Model Context Protocol (MCP) Guide: Connecting AI Models to Local Files & Databases",
+      "track": "🚀 AI Technical Skills & Developer Frameworks",
+      "time_savings": "Saves 10 Hours/Week",
+      "status": "draft",
+      "category": "Course",
+      "keywords": ["mcp", "anthropic", "claude", "protocol"]
+    },
+    {
+      "id": 10,
+      "series_title": "Make.com CRM Lead Scoring & HubSpot Sync Masterclass",
+      "track": "⚙️ No-Code Automation & Workflow Systems",
+      "time_savings": "Saves 8 Hours/Week",
+      "status": "draft",
+      "category": "Course",
+      "keywords": ["make.com", "hubspot", "crm", "lead scoring"]
+    }
+  ]
+}

@@ -1,50 +1,41 @@
 ---
 name: write_course_series
-description: Generate and publish a 5-part interconnected micro-course series for TheAskt based on audience tracks (Students, Professionals, Daily AI Users, AI Skills, Automation Skills).
+description: Generate and publish the next 5-part micro-course series for TheAskt directly from course_topics_catalog.json whenever the user requests it.
 ---
 
-# Instructions for Drafting & Publishing Evergreen 5-Part Micro-Courses
+# Automatic Next Course Series Publishing Workflow
 
-> **CRITICAL REQUIREMENT**: Every article in the 5-part series MUST strictly follow the **Premium Human-Like Content Generation Framework** in `CONTENT_FRAMEWORK.md` and be published under `content_type = 'course'`.
-
----
-
-## 1. Core Value Proposition
-Every course generated must solve a real-world productivity problem with a clear goal:
-> **"Save 5 to 10 hours of manual work every week using practical AI & Automation."**
+Whenever the user prompts you to write or publish the next course series (e.g. *"write next course series"*, *"publish next course"*), follow this automated 5-step workflow:
 
 ---
 
-## 2. Audience Track & Category Selection
-Select the target track for the course series:
-* 🎓 **For Students**: Active recall, exam prep, thesis research, literature review with Perplexity.
-* 💼 **For Professionals**: Meeting summaries, executive reports, client onboarding, inbox zero.
-* ⚡ **For Daily AI Users**: Prompt shortcuts, custom GPTs, browser AI extensions, automated file organization.
-* 🚀 **For AI Skills**: Prompt engineering frameworks (CoT/Few-shot), RAG architectures, local LLMs with Ollama.
-* ⚙️ **For Automation Skills**: n8n email marketing automation, Make.com CRM pipelines, Zapier AI agents.
+## Step 1: Pick Next Topic from Catalog
+1. Open `course_topics_catalog.json` located at the root of `e:/brandapp/theaskt/course_topics_catalog.json`.
+2. Locate the first topic with `"status": "draft"`.
+3. Read the `series_title`, `track`, `time_savings`, and `keywords`.
 
 ---
 
-## 3. The 5-Module Curriculum Structure
-Generate 5 interconnected articles in sequence (each 1,000+ words):
+## Step 2: Generate 5-Module Curriculum (1,000+ Words Each)
+Generate 5 interconnected modules adhering strictly to `CONTENT_FRAMEWORK.md`:
 * **Part 1: The Foundation & Trend Analysis** (Hook, trend context, why it saves 5-10 hrs/week, `<div class="geo-takeaways">`)
-* **Part 2: System Architecture & Flowcharts** (Deep dive mechanics, `<div class="geo-mermaid">` 40% zoom diagram, comparison tables)
+* **Part 2: Deep Architecture & Flowcharts** (Deep dive mechanics, `<div class="geo-mermaid">` 40% zoom diagram, comparison tables)
 * **Part 3: Hands-On Tutorial & Tooling** (`<p>1. Step 1 (Action): ...</p>` checklist, code setup, step-by-step walkthrough)
 * **Part 4: Real-World Case Study & Metrics** (Before vs After comparison table, ROI metrics, real stories)
 * **Part 5: Masterclass & Future Roadmap** (Decision matrix, comprehensive `<div class="geo-faq">`, citations, course CTA)
 
 ---
 
-## 4. Execution & Publication
-1. Save the draft to `draft_course_series.json`:
+## Step 3: Populate `draft_course_series.json`
+Save the generated draft to `draft_course_series.json`:
 ```json
 {
-  "series_title": "How to Automate Email Marketing with n8n & AI Agents",
-  "track": "Automation Skills",
-  "time_savings": "Saves 10 Hours/Week",
+  "series_title": "<Clean Series Title from Catalog>",
+  "track": "<Track Name>",
+  "time_savings": "<Saves X Hours/Week>",
   "articles": [
     {
-      "title": "Part 1 Title...",
+      "title": "Part 1: The Foundation — ...",
       "excerpt": "...",
       "category": "Course",
       "image": "https://images.unsplash.com/photo-...",
@@ -56,8 +47,16 @@ Generate 5 interconnected articles in sequence (each 1,000+ words):
 }
 ```
 
-2. Run publication command:
+---
+
+## Step 4: Execute Turso DB Publisher
+Run the Python publication script:
 ```bash
 python scripts/publish_course_series.py
 ```
-This automatically links the 5 modules with header banners and course syllabus widgets, registers them under `content_type = 'course'`, and routes them exclusively to `/courses` and `/courses/[courseSlug]`.
+This automatically links the 5 modules, tags them with `series_title`, registers them under `content_type = 'course'`, and revalidates live URLs.
+
+---
+
+## Step 5: Update Topic Status in Catalog
+Update `course_topics_catalog.json` to mark the topic as `"status": "published"`.
