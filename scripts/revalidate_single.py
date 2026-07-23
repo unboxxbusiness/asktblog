@@ -25,17 +25,24 @@ def main():
         
     payload = json.dumps({"slug": slug, "category": category}).encode('utf-8')
     
-    try:
-        req = urllib.request.Request(
-            f"{base_url}/api/revalidate",
-            data=payload,
-            headers={'x-api-key': api_key, 'Content-Type': 'application/json'},
-            method='POST'
-        )
-        with urllib.request.urlopen(req) as resp:
-            print(f"[+] Revalidated Home, Category, and Article - Status: {resp.status}")
-    except Exception as e:
-        print(f"[!] Failed to revalidate: {e}")
+    # Target both local dev environment and production url
+    target_urls = [
+        f"http://localhost:3000/api/revalidate",
+        f"{base_url}/api/revalidate"
+    ]
+    
+    for url in target_urls:
+        try:
+            req = urllib.request.Request(
+                url,
+                data=payload,
+                headers={'x-api-key': api_key, 'Content-Type': 'application/json'},
+                method='POST'
+            )
+            with urllib.request.urlopen(req) as resp:
+                print(f"[+] Revalidated Home, Category, and Article at {url} - Status: {resp.status}")
+        except Exception as e:
+            print(f"[*] Note for {url}: {e}")
 
 if __name__ == '__main__':
     main()

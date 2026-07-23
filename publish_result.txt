@@ -1,4 +1,4 @@
-[*] Processing article: 'Agentic Workflows: How AI Agents Are Replacing Traditional Software in 2026'
-[*] Target slug: 'agentic-workflows-how-ai-agents-are-replacing-traditional-software-in-2026'
-[*] Article slug 'agentic-workflows-how-ai-agents-are-replacing-traditional-software-in-2026' not found. Executing INSERT query...
-[+] SUCCESS: Live article 'Agentic Workflows: How AI Agents Are Replacing Traditional Software in 2026' successfully published to Turso DB!
+[*] Processing article: 'Claude Cowork 'Record a Skill' & Cursor 'Router': The July 2026 Shift to Autonomous Screen-to-Code Automation'
+[*] Target slug: 'claude-cowork-record-a-skill-cursor-router-the-july-2026-shift-to-autonomous-screen-to-code-automation'
+[*] Article slug 'claude-cowork-record-a-skill-cursor-router-the-july-2026-shift-to-autonomous-screen-to-code-automation' not found. Executing INSERT query...
+[+] SUCCESS: Live article 'Claude Cowork 'Record a Skill' & Cursor 'Router': The July 2026 Shift to Autonomous Screen-to-Code Automation' successfully published to Turso DB!
