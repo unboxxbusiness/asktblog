@@ -285,7 +285,12 @@ export async function getCourses(): Promise<Article[]> {
     return await db
       .select()
       .from(articles)
-      .where(and(eq(articles.status, "published"), eq(articles.contentType, "course")))
+      .where(
+        and(
+          eq(articles.status, "published"),
+          or(eq(articles.contentType, "course"), eq(articles.category, "Course"))
+        )
+      )
       .orderBy(desc(articles.publishedAt));
   } catch (error) {
     console.error("Database query failed in getCourses:", error);
@@ -333,15 +338,13 @@ export async function getCourseSeriesGrouped(): Promise<CourseSeriesGroup[]> {
     const groupsMap = new Map<string, CourseSeriesGroup>();
 
     allCourseArticles.forEach((art) => {
-      // Determine the overarching course title:
-      // 1. Explicit sourceName if present and valid
-      // 2. Or fallback to a clean title derived from Part 1
-      let cleanTitle = "Automating Email Marketing with n8n & AI Agents";
-
-      if (art.sourceName && art.sourceName.length > 5 && !art.sourceName.includes("n8n Automation Docs")) {
-        cleanTitle = art.sourceName;
-      } else if (art.keywords && art.keywords.length > 5) {
-        cleanTitle = art.keywords;
+      // Determine overarching course title:
+      let cleanTitle = "";
+      if (art.sourceName && art.sourceName.trim().length > 3 && !art.sourceName.includes("n8n Automation Docs")) {
+        cleanTitle = art.sourceName.trim();
+      } else {
+        // Strip 'Part X:' and clean title
+        cleanTitle = art.title.replace(/^Part\s*\d+:\s*/i, "").split("—")[0].split("-")[0].trim();
       }
 
       const groupKey = cleanTitle.toLowerCase();
@@ -361,10 +364,11 @@ export async function getCourseSeriesGrouped(): Promise<CourseSeriesGroup[]> {
       const group = groupsMap.get(groupKey)!;
       group.modules.push(art);
 
-      // If this article is Part 1, prioritize its slug and excerpt for the main card
+      // If this article is Part 1, prioritize its slug, excerpt and image for the main card
       if (art.title.toLowerCase().includes("part 1")) {
         group.firstModuleSlug = art.slug;
         group.excerpt = art.excerpt;
+        group.image = art.image;
       }
     });
 
