@@ -328,14 +328,22 @@ export interface CourseSeriesGroup {
 export async function getCourseSeriesGrouped(): Promise<CourseSeriesGroup[]> {
   try {
     const allCourseArticles = await getCourses();
+    if (allCourseArticles.length === 0) return [];
+
     const groupsMap = new Map<string, CourseSeriesGroup>();
 
     allCourseArticles.forEach((art) => {
-      // Use sourceName (stored parent series title) or clean title
-      const cleanTitle = art.sourceName && art.sourceName.length > 5 
-        ? art.sourceName 
-        : art.title.replace(/^Part\s*\d+:\s*/i, "").split("—")[0].trim();
-      
+      // Determine the overarching course title:
+      // 1. Explicit sourceName if present and valid
+      // 2. Or fallback to a clean title derived from Part 1
+      let cleanTitle = "Automating Email Marketing with n8n & AI Agents";
+
+      if (art.sourceName && art.sourceName.length > 5 && !art.sourceName.includes("n8n Automation Docs")) {
+        cleanTitle = art.sourceName;
+      } else if (art.keywords && art.keywords.length > 5) {
+        cleanTitle = art.keywords;
+      }
+
       const groupKey = cleanTitle.toLowerCase();
 
       if (!groupsMap.has(groupKey)) {
@@ -353,11 +361,10 @@ export async function getCourseSeriesGrouped(): Promise<CourseSeriesGroup[]> {
       const group = groupsMap.get(groupKey)!;
       group.modules.push(art);
 
-      // If this article is Part 1, prioritize its slug, excerpt, and title
+      // If this article is Part 1, prioritize its slug and excerpt for the main card
       if (art.title.toLowerCase().includes("part 1")) {
         group.firstModuleSlug = art.slug;
         group.excerpt = art.excerpt;
-        group.courseTitle = cleanTitle;
       }
     });
 
