@@ -4,7 +4,7 @@ import Link from "next/link";
 import { getArticleBySlug, getCourses } from "@/services/articles";
 import ArticleBody from "@/features/articles/ArticleBody";
 import CourseAccordionSidebar from "@/components/courses/CourseAccordionSidebar";
-import { ArrowLeft, ArrowRight, Clock, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Clock, Sparkles, Award, ShieldCheck, CheckCircle2 } from "lucide-react";
 
 export const revalidate = 300;
 
@@ -18,12 +18,12 @@ export async function generateMetadata({ params }: PageProps) {
   if (!article) return {};
 
   return {
-    title: `${article.title} | TheAskt Courses`,
+    title: `${article.title} | TheAskt Skill Path`,
     description: article.excerpt,
   };
 }
 
-export default async function CourseSlugPage({ params }: PageProps) {
+export default async function GoogleStyleCourseViewer({ params }: PageProps) {
   const { courseSlug } = await params;
   const currentArticle = await getArticleBySlug(courseSlug);
 
@@ -34,7 +34,7 @@ export default async function CourseSlugPage({ params }: PageProps) {
   // Fetch all published course articles to populate sidebar accordion
   const allCourses = await getCourses();
 
-  // Find all sibling modules belonging to the same course or category
+  // Find all sibling modules belonging to this course series
   const courseModules = allCourses.map((c, i) => ({
     id: c.id,
     title: c.title,
@@ -44,70 +44,97 @@ export default async function CourseSlugPage({ params }: PageProps) {
   }));
 
   const currentIdx = courseModules.findIndex((m) => m.slug === courseSlug);
+  const activePartNum = currentIdx >= 0 ? currentIdx + 1 : 1;
   const prevModule = currentIdx > 0 ? courseModules[currentIdx - 1] : null;
   const nextModule = currentIdx < courseModules.length - 1 ? courseModules[currentIdx + 1] : null;
 
+  const cleanCourseTitle = currentArticle.title.replace(/^Part\s*\d+:\s*/i, "").split("—")[0].trim();
+
   return (
-    <div className="min-h-screen bg-background py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        
-        {/* Breadcrumb Navigation */}
-        <div className="mb-6 flex items-center gap-2 text-xs text-muted-foreground">
-          <Link href="/courses" className="hover:text-primary transition-colors flex items-center gap-1">
-            <ArrowLeft className="w-3 h-3" />
-            All Courses Hub
-          </Link>
-          <span>/</span>
-          <span className="text-foreground font-medium truncate">{currentArticle.title}</span>
-        </div>
-
-        {/* Master Course Viewer Layout: Sidebar Accordion + Main Content */}
-        <div className="flex flex-col lg:flex-row gap-8 items-start">
+    <div className="min-h-screen bg-background">
+      
+      {/* 1. Google Skills Style Course Header Card */}
+      <div className="bg-slate-900 text-white py-10 px-4 sm:px-6 lg:px-8 border-b border-slate-800">
+        <div className="max-w-7xl mx-auto space-y-4">
           
-          {/* Sticky Accordion Sidebar */}
-          <CourseAccordionSidebar
-            courseTitle={currentArticle.title.replace(/^Part\s*\d+:\s*/i, "")}
-            modules={courseModules}
-            currentSlug={courseSlug}
-            trackName={currentArticle.category || "Automation Track"}
-            timeSavings="Saves ~8 Hours/Week"
-          />
+          {/* Breadcrumb Navigation */}
+          <div className="flex items-center gap-2 text-xs text-slate-400">
+            <Link href="/courses" className="hover:text-blue-400 transition-colors flex items-center gap-1">
+              <ArrowLeft className="w-3.5 h-3.5" />
+              All Skill Paths
+            </Link>
+            <span>/</span>
+            <span className="text-slate-200 font-medium truncate">{cleanCourseTitle}</span>
+          </div>
 
-          {/* Main Article Content Reader */}
-          <main className="flex-1 min-w-0 bg-card border border-border/80 rounded-2xl p-6 sm:p-10 shadow-sm w-full">
-            
-            {/* Header Metadata */}
-            <div className="space-y-4 border-b border-border/60 pb-6 mb-8">
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-semibold bg-primary/10 text-primary px-3 py-1 rounded-full flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  Module {currentIdx >= 0 ? currentIdx + 1 : 1} of {courseModules.length}
+          <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
+            <div className="space-y-2 max-w-3xl">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-blue-500/20 text-blue-300 border border-blue-500/30 px-3 py-1 rounded-full">
+                  <Award className="w-3.5 h-3.5 text-blue-400" />
+                  Google-Inspired Skill Path
                 </span>
-                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5" />
-                  {currentArticle.readingTime || 6} min read
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-full">
+                  <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                  Saves ~8 Hours/Week
+                </span>
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/30 px-3 py-1 rounded-full">
+                  <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
+                  Module {activePartNum} of {courseModules.length}
                 </span>
               </div>
 
-              <h1 className="text-2xl sm:text-4xl font-black text-foreground tracking-tight leading-tight">
+              <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-tight">
                 {currentArticle.title}
               </h1>
-
-              {currentArticle.excerpt && (
-                <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
-                  {currentArticle.excerpt}
-                </p>
-              )}
             </div>
 
-            {/* Content Body complying with CONTENT_FRAMEWORK.md */}
+            {/* Progress Badge */}
+            <div className="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 text-center shrink-0 min-w-[160px]">
+              <span className="text-xs text-slate-400 font-medium block">Path Progress</span>
+              <span className="text-2xl font-bold text-emerald-400 block my-0.5">
+                {Math.round((activePartNum / Math.max(1, courseModules.length)) * 100)}%
+              </span>
+              <span className="text-[11px] text-slate-300">
+                {activePartNum} of {courseModules.length} Modules
+              </span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      {/* 2. Main Course Reader & Accordion Sidebar */}
+      <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col lg:flex-row gap-8 items-start">
+          
+          {/* Left Column: Google-Style Accordion Sidebar */}
+          <CourseAccordionSidebar
+            courseTitle={cleanCourseTitle}
+            modules={courseModules}
+            currentSlug={courseSlug}
+            trackName={currentArticle.category || "Automation Skill Path"}
+            timeSavings="Saves ~8 Hours/Week"
+          />
+
+          {/* Right Column: High-Quality Article Content Reader */}
+          <div className="flex-1 min-w-0 bg-card border border-border/80 rounded-2xl p-6 sm:p-10 shadow-sm w-full space-y-8">
+            
+            {/* Lead Excerpt Summary */}
+            {currentArticle.excerpt && (
+              <div className="bg-muted/40 border-l-4 border-primary p-4 rounded-r-xl text-sm text-foreground leading-relaxed">
+                <strong>Module Overview:</strong> {currentArticle.excerpt}
+              </div>
+            )}
+
+            {/* Full 1,000+ Word Content rendering custom geo-* elements */}
             <ArticleBody
               htmlContent={currentArticle.content}
               category={currentArticle.category || "Automation"}
             />
 
-            {/* Bottom Module Navigation Buttons */}
-            <div className="mt-12 pt-6 border-t border-border/60 flex items-center justify-between gap-4">
+            {/* Bottom Module Navigation Controls */}
+            <div className="pt-8 border-t border-border/60 flex items-center justify-between gap-4">
               {prevModule ? (
                 <Link
                   href={`/courses/${prevModule.slug}`}
@@ -123,7 +150,7 @@ export default async function CourseSlugPage({ params }: PageProps) {
               {nextModule ? (
                 <Link
                   href={`/courses/${nextModule.slug}`}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors ml-auto"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors shadow-sm ml-auto"
                 >
                   Next Module
                   <ArrowRight className="w-4 h-4" />
@@ -131,18 +158,18 @@ export default async function CourseSlugPage({ params }: PageProps) {
               ) : (
                 <Link
                   href="/courses"
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors ml-auto"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors shadow-sm ml-auto"
                 >
-                  Complete Course Hub
-                  <Sparkles className="w-4 h-4" />
+                  Complete Course Path
+                  <CheckCircle2 className="w-4 h-4" />
                 </Link>
               )}
             </div>
 
-          </main>
+          </div>
         </div>
+      </main>
 
-      </div>
     </div>
   );
 }
