@@ -98,7 +98,7 @@ def publish_to_turso(env, article_data):
             {"type": "integer", "value": str(reading_time)},
             {"type": "text", "value": article_data.get('tags', '')},
             {"type": "integer", "value": str(article_data.get('viral_score', 95))},
-            {"type": "text", "value": article_data.get('source_name', '')},
+            {"type": "text", "value": article_data['series_title']},  # Store explicit parent course series title
             {"type": "text", "value": article_data.get('source_url', '')},
             {"type": "text", "value": slug}
         ]
@@ -132,7 +132,7 @@ def publish_to_turso(env, article_data):
             {"type": "integer", "value": str(reading_time)},
             {"type": "text", "value": article_data.get('tags', '')},
             {"type": "integer", "value": str(article_data.get('viral_score', 95))},
-            {"type": "text", "value": article_data.get('source_name', '')},
+            {"type": "text", "value": article_data['series_title']},  # Store explicit parent course series title
             {"type": "text", "value": article_data.get('source_url', '')}
         ]
         payload = {"requests": [{"type": "execute", "stmt": {"sql": insert_sql, "args": args}}, {"type": "close"}]}
@@ -188,6 +188,7 @@ def main():
         art['slug'] = slugify(art['title'])
         art['part'] = i + 1
         art['category'] = art.get('category', 'Course')
+        art['series_title'] = series_title
 
     slugs = [art['slug'] for art in articles]
     category = "Course"

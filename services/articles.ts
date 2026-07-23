@@ -331,8 +331,11 @@ export async function getCourseSeriesGrouped(): Promise<CourseSeriesGroup[]> {
     const groupsMap = new Map<string, CourseSeriesGroup>();
 
     allCourseArticles.forEach((art) => {
-      // Extract clean base title from Part 1 or title prefix
-      const cleanTitle = art.title.replace(/^Part\s*\d+:\s*/i, "").split("—")[0].trim();
+      // Use sourceName (stored parent series title) or clean title
+      const cleanTitle = art.sourceName && art.sourceName.length > 5 
+        ? art.sourceName 
+        : art.title.replace(/^Part\s*\d+:\s*/i, "").split("—")[0].trim();
+      
       const groupKey = cleanTitle.toLowerCase();
 
       if (!groupsMap.has(groupKey)) {
@@ -350,7 +353,7 @@ export async function getCourseSeriesGrouped(): Promise<CourseSeriesGroup[]> {
       const group = groupsMap.get(groupKey)!;
       group.modules.push(art);
 
-      // If this article is Part 1, prioritize its title, slug, and excerpt
+      // If this article is Part 1, prioritize its slug, excerpt, and title
       if (art.title.toLowerCase().includes("part 1")) {
         group.firstModuleSlug = art.slug;
         group.excerpt = art.excerpt;
