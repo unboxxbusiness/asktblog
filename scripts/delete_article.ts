@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { createClient } = require('@libsql/client');
+import { createClient } from '@libsql/client';
 
 function loadEnv() {
   const envPath = path.join(__dirname, '..', '.env.local');
